@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ja" class="scroll-smooth">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>おすすめのAmazon商品</title>
+  <meta name="description" content="管理人が実際に使って良かったAmazon商品のまとめ。カテゴリや検索で素早く探せます。" />
+  <meta name="color-scheme" content="light dark" />
+  <meta property="og:title" content="おすすめのAmazon商品" />
+  <meta property="og:description" content="管理人が実際に使って良かったAmazon商品のまとめ。" />
+  <meta property="og:type" content="website" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter","system-ui","-apple-system","Segoe UI","Roboto","Helvetica","Arial","Noto Sans JP","Apple Color Emoji","Segoe UI Emoji"] }
+        }
+      },
+      darkMode: 'class'
+    }
+  </script>
+  <script type="application/ld+json" id="jsonld"></script>
+  <style>::selection{background:rgba(148,163,184,.3);}</style>
+</head>
+<body class="bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
+  <header class="py-6">
+    <div class="max-w-6xl mx-auto px-4 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3 font-semibold tracking-tight">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">★</span>
+        <span class="text-lg">おすすめのAmazon商品</span>
+      </a>
+      <button id="darkToggle" class="text-sm underline underline-offset-4 hover:no-underline">テーマ切替</button>
+    </div>
+  </header>
+
+  <section class="max-w-6xl mx-auto px-4 pt-2 pb-4">
+    <div class="grid md:grid-cols-2 gap-6 items-end">
+      <div>
+        <p class="text-slate-600 dark:text-slate-300">シンプルで高速。カテゴリや検索で商品を探せます。価格は表示せず、最新価格はAmazonでご確認ください。</p>
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">開示：当サイトはアフィリエイト広告（Amazonアソシエイト含む）を利用しています。</p>
+      </div>
+      <form id="controls" class="grid grid-cols-2 md:grid-cols-6 gap-2 md:gap-3">
+        <input id="search" type="search" placeholder="商品を検索"
+          class="col-span-2 md:col-span-3 w-full bg-transparent border-0 border-b border-slate-300/70 dark:border-slate-700/70 focus:outline-none focus:ring-0 px-0 py-2"
+          aria-label="商品を検索" />
+
+        <select id="category"
+          class="col-span-1 w-full bg-transparent border-0 border-b border-slate-300/70 dark:border-slate-700/70 px-0 py-2"
+          aria-label="カテゴリで絞り込み">
+          <option value="">すべて</option>
+        </select>
+
+        <select id="sort"
+          class="col-span-1 w-full bg-transparent border-0 border-b border-slate-300/70 dark:border-slate-700/70 px-0 py-2"
+          aria-label="並び替え">
+          <option value="trending">おすすめ</option>
+          <option value="rating-desc">評価</option>
+          <option value="newest">新着</option>
+        </select>
+      </form>
+    </div>
+  </section>
+
+  <main class="max-w-6xl mx-auto px-4 pb-16">
+    <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <div id="emptyState" class="hidden text-center py-16 text-slate-500 dark:text-slate-400">
+      <p>条件に合う商品が見つかりません。検索や条件を調整してください。</p>
+      <button id="reset" class="mt-3 text-sm underline underline-offset-4 hover:no-underline">条件をリセット</button>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-200 dark:border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 py-10 text-sm text-slate-600 dark:text-slate-400">
+      <p><strong>開示：</strong>当サイトはアフィリエイト広告（Amazonアソシエイト含む）を利用しています。リンク先の価格や在庫は変動する場合があります。</p>
+      <p class="mt-2">© <span id="year"></span> おすすめのAmazon商品</p>
+    </div>
+  </footer>
+
+  <script>
+    const AFFILIATE_TAG = 'pridexjp-22';
+    const UTM = 'utm_source=site&utm_medium=landing&utm_campaign=affiliates';
+    let PRODUCTS = [];
+    const CATEGORY_ORDER = [];
+
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    function appendAffiliateParams(url) {
+      try {
+        const u = new URL(url);
+        if (/amazon\./i.test(u.hostname)) {
+          const hasTag = u.searchParams.has('tag');
+          if (!hasTag && AFFILIATE_TAG) u.searchParams.set('tag', AFFILIATE_TAG);
+        }
+        if (UTM) {
+          UTM.split('&').forEach(p => {
+            const [k, v] = p.split('=');
+            if (k && v) u.searchParams.set(k, v);
+          });
+        }
+        return u.toString();
+      } catch (e) { return url; }
+    }
+    function unique(arr) { return Array.from(new Set(arr)); }
+
+    const gridEl = $('#grid');
+    const emptyEl = $('#emptyState');
+
+    function productCard(p) {
+      const rating = (typeof p.rating === 'number')
+        ? `<div class="flex items-center gap-1 text-amber-500" aria-label="評価 ${p.rating} / 5"><span>★</span><span class="text-sm">${p.rating.toFixed(1)}</span></div>`
+        : '';
+      const badge = p.badge ? `<span class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/80 text-white text-xs px-2 py-1">${p.badge}</span>` : '';
+      const href = appendAffiliateParams(p.url);
+      const note = p.note ? `<details class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+          <summary class="cursor-pointer select-none hover:opacity-80">メモ</summary>
+          <div class="mt-2">${p.note}</div>
+        </details>` : '';
+      const highlights = Array.isArray(p.highlights) && p.highlights.length ? `
+        <ul class="mt-1 text-sm list-disc list-inside text-slate-600 dark:text-slate-300">
+          ${p.highlights.map(h => `<li>${h}</li>`).join('')}
+        </ul>` : '';
+
+      return `
+      <article class="group rounded-2xl border border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/40 overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 relative">
+        ${badge}
+        <a href="${href}" target="_blank" rel="nofollow noopener sponsored" aria-label="Amazonで${p.title}を開く">
+          <img src="${p.image}" alt="${p.title}" loading="lazy" class="h-52 w-full object-cover" />
+        </a>
+        <div class="p-4 flex flex-col gap-2">
+          <h3 class="font-semibold leading-snug tracking-tight">${p.title}</h3>
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <span class="inline-flex items-center rounded-full border border-slate-200 dark:border-slate-800 px-2 py-0.5">${p.category || 'その他'}</span>
+            ${p.createdAt ? `<time datetime="${p.createdAt}">${new Date(p.createdAt).toLocaleDateString('ja-JP')}</time>` : ''}
+          </div>
+          <div class="flex items-center gap-1">${rating}</div>
+          ${highlights}
+          ${note}
+          <a href="${href}" target="_blank" rel="nofollow noopener sponsored" class="mt-2 text-sm underline underline-offset-4 hover:no-underline">Amazonで見る →</a>
+        </div>
+      </article>`;
+    }
+
+    function render(products) {
+      gridEl.innerHTML = products.map(productCard).join('');
+      const has = products.length > 0;
+      gridEl.classList.toggle('hidden', !has);
+      emptyEl.classList.toggle('hidden', has);
+      const jsonld = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        'itemListElement': products.map((p, i) => ({
+          '@type': 'ListItem',
+          'position': i + 1,
+          'url': appendAffiliateParams(p.url),
+          'name': p.title,
+          ...(p.note ? { 'description': p.note } : {})
+        }))
+      };
+      document.getElementById('jsonld').textContent = JSON.stringify(jsonld);
+    }
+
+    const state = { q: '', cat: '', sort: 'trending' };
+    function apply() {
+      let results = PRODUCTS.slice();
+      if (state.q) {
+        const q = state.q.toLowerCase();
+        results = results.filter(p => `${p.title} ${p.category} ${p.note || ''}`.toLowerCase().includes(q));
+      }
+      if (state.cat) results = results.filter(p => p.category === state.cat);
+      results.sort((a, b) => {
+        switch (state.sort) {
+          case 'rating-desc': return (b.rating ?? -Infinity) - (a.rating ?? -Infinity);
+          case 'newest': return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          default: return 0;
+        }
+      });
+      render(results);
+    }
+
+    const searchEl = document.getElementById('search');
+    const categoryEl = document.getElementById('category');
+    const sortEl = document.getElementById('sort');
+
+    function populateCategories() {
+      const categories = CATEGORY_ORDER.length ? CATEGORY_ORDER : unique(PRODUCTS.map(p => p.category).filter(Boolean));
+      categoryEl.innerHTML = '<option value="">すべて</option>';
+      categories.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c; categoryEl.appendChild(o);
+      });
+    }
+
+    searchEl.addEventListener('input', () => { state.q = searchEl.value.trim(); apply(); });
+    categoryEl.addEventListener('change', () => { state.cat = categoryEl.value; apply(); });
+    sortEl.addEventListener('change', () => { state.sort = sortEl.value; apply(); });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      searchEl.value = ''; categoryEl.value = ''; sortEl.value = 'trending';
+      state.q = ''; state.cat = ''; state.sort = 'trending';
+      apply();
+    });
+
+    const darkToggle = document.getElementById('darkToggle');
+    function setTheme(dark) {
+      document.documentElement.classList.toggle('dark', dark);
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    darkToggle.addEventListener('click', () => setTheme(!document.documentElement.classList.contains('dark')));
+    setTheme(localStorage.getItem('theme') === 'dark');
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    fetch('products.json')
+      .then(r => r.json())
+      .then(data => {
+        PRODUCTS = Array.isArray(data) ? data : (data.products || []);
+        populateCategories();
+        apply();
+      })
+      .catch(err => {
+        console.error('Failed to load products.json', err);
+        populateCategories();
+        apply();
+      });
+  </script>
+</body>
+</html>
