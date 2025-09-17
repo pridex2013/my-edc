@@ -1,7 +1,7 @@
 [
   {
     "id": "user-001",
-    "title": "商品 1（ここを書き換えてください）",
+    "title": "新設計　チタンキーリング",
     "image": "images/product1.webp",
     "url": "https://amzn.to/4m264pc",
     "category": "未分類",
@@ -10,7 +10,7 @@
   },
   {
     "id": "user-002",
-    "title": "商品 2（ここを書き換えてください）",
+    "title": "新設計　チタンキーリングII",
     "image": "images/product2.jpg",
     "url": "https://amzn.to/3J0n4xF",
     "category": "未分類",
@@ -19,7 +19,7 @@
   },
   {
     "id": "user-003",
-    "title": "商品 3（ここを書き換えてください）",
+    "title": "チタン キーリング 360°回転コネクタ",
     "image": "images/product3.jpg",
     "url": "https://amzn.to/3ISz7Nx",
     "category": "未分類",
@@ -28,7 +28,7 @@
   },
   {
     "id": "user-004",
-    "title": "商品 4（ここを書き換えてください）",
+    "title": "時計やバッドに付けるマルチツール",
     "image": "images/product4.jpeg",
     "url": "https://amzn.to/3IU7La3",
     "category": "未分類",
@@ -37,7 +37,7 @@
   },
   {
     "id": "user-005",
-    "title": "商品 5（ここを書き換えてください）",
+    "title": "SafeBlade(セーフブレード)",
     "image": "images/product5.webp",
     "url": "https://amzn.to/4mFZMM9",
     "category": "未分類",
